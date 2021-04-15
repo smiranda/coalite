@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine3.12 AS build
 WORKDIR /app
 COPY . .
-WORKDIR /app/server
+WORKDIR /app/coaliter
 RUN dotnet publish -r linux-musl-x64 -c Release -o /app/deploy/release
 RUN dotnet publish -r linux-musl-x64 -c Debug -o /app/deploy/debug
 RUN cp nlog.config /app/deploy/debug/
