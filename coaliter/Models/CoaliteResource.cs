@@ -1,14 +1,27 @@
+using System;
 using Microsoft.AspNetCore.Http;
 
 namespace Ketchup.Pizza.Models
 {
-  public class CountResource
+  public class CoaliteResource
   {
-    public CountResource(int count)
+    public CoaliteResource(string coalid,
+                           string payload,
+                           string signature,
+                           long seqid,
+                           DateTime timestamp)
     {
-      Count = count;
+      Coalid = coalid;
+      Payload = payload;
+      Signature = signature;
+      Seqid = seqid;
+      Timestamp = timestamp;
     }
 
-    public int Count { get; set; }
+    public string Coalid { get; set; }
+    public string Payload { get; set; }
+    public string Signature { get; set; }
+    public long Seqid { get; }
+    public DateTime Timestamp { get; }
   }
 }

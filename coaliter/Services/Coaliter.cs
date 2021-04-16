@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace Ketchup.Pizza.Services
 {
@@ -17,6 +18,9 @@ namespace Ketchup.Pizza.Services
   {
     private object _dblock;
     private ILogger _logger;
+    private string _keypath;
+    private string _passphrase;
+    private RSACryptoServiceProvider _rsaProvider;
     private string _connectionString;
     private static DateTime _baseDate = new DateTime(year: 2021, month: 4, day: 15, hour: 22, minute: 23, second: 0);
     private DbContextOptionsBuilder<CoaliteDBContext> _connectionOptionsBuilder;
@@ -24,6 +28,13 @@ namespace Ketchup.Pizza.Services
     public Coaliter(IConfiguration configuration,
                     ILogger<Coaliter> logger)
     {
+      _keypath = configuration["PrivateKey"];
+      _passphrase = configuration["Keypassphrase"];
+      var keyData = File.ReadAllText(_keypath);
+
+      _rsaProvider = new RSACryptoServiceProvider();
+      _rsaProvider.ImportFromPem(new ReadOnlySpan<char>(keyData.ToCharArray()));
+
       _connectionString = configuration["State:ConnectionString"];
       _connectionOptionsBuilder = new DbContextOptionsBuilder<CoaliteDBContext>();
       _connectionOptionsBuilder.UseSqlite(_connectionString);
@@ -58,11 +69,18 @@ namespace Ketchup.Pizza.Services
         dbcontext.Update(coalite);
         dbcontext.SaveChanges();
       }
+      var coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
-      var signature = "";
+      var dataToSign = $"{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{coalite.Payload}";
+      var signature = Convert.ToBase64String(_rsaProvider
+                                             .SignData(Encoding.UTF8.GetBytes(dataToSign),
+                                                       SHA256.Create()));
+
       return new CoaliteResource(coalid: coalite.Coalid,
                                  payload: coalite.Payload,
-                                 signature);
+                                 signature: signature,
+                                 seqid: coalite.FullSecondStamp,
+                                 timestamp: coaliteTs);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

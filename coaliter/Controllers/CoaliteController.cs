@@ -1,4 +1,5 @@
 
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -10,7 +11,7 @@ using Ketchup.Pizza.Services;
 namespace Ketchup.Pizza.Controllers
 {
   [ApiController]
-  [Route("coalite")]
+  [Route("[controller]/[action]")]
   public class CoaliteController : ControllerBase
   {
     private readonly ILogger<CoaliteController> _logger;
@@ -25,16 +26,16 @@ namespace Ketchup.Pizza.Controllers
       _coaliter = coaliter;
     }
 
-    [HttpGet("")]
-    public ActionResult<CoaliteResource> Get()
+    [HttpGet("/Coalite")]
+    public ActionResult<CoaliteResource> Coalite()
     {
       var claimId = "System"; // Could be negotiated with the outside.
       var coalite = _coaliter.Get(claimId);
       return Ok(coalite);
     }
 
-    [HttpGet("/count")]
-    public ActionResult<int> GetCount()
+    [HttpGet]
+    public ActionResult<int> Count()
     {
       var coalite = _coaliter.Count();
       return Ok(coalite);
