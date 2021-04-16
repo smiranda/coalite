@@ -1,3 +1,4 @@
 !state/stub.txt
 state/*
 .vscode
+*.pem
