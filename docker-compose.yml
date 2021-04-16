@@ -7,6 +7,7 @@ services:
       context: .
     image: ketchup.pizza/coaliter:${COALITER_VER}
     environment:
+      PublicKey: "/keys/key.pub"
       PrivateKey: "/keys/key.pem"
       State__ConnectionString: "Data Source=/app/state/state.db"
     volumes:
