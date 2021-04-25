@@ -8,7 +8,8 @@ namespace Ketchup.Pizza.Services
 {
   public interface ICoaliter
   {
-    CoaliteResource Get(string claimId);
+    CoaliteResource Get();
+    CoaliteResource Action(CoaliteActionRequest coaliteActionRequest);
     CountResource Count();
   }
 }

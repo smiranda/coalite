@@ -11,6 +11,9 @@ using Microsoft.Extensions.Hosting;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using System.Collections.Generic;
+using System.Net;
+using Newtonsoft.Json.Linq;
 
 namespace Ketchup.Pizza.Services
 {
@@ -53,7 +56,7 @@ namespace Ketchup.Pizza.Services
         return new CountResource(count);
       }
     }
-    public CoaliteResource Get(string claimId)
+    public CoaliteResource Get()
     {
       Coalite coalite;
       lock (_dblock)
@@ -63,22 +66,22 @@ namespace Ketchup.Pizza.Services
           dbcontext.Coalites
                     .OrderByDescending(c => c.FullSecondStamp)
                     .FirstOrDefault();
-        coalite.ClaimedAt = DateTime.UtcNow;
-        coalite.Claimed = true;
-        coalite.ClaimedBy = claimId;
-        dbcontext.Update(coalite);
-        dbcontext.SaveChanges();
+        if (coalite.Claimed)
+        {
+          throw new CoalitingException((int)HttpStatusCode.BadRequest, "Current coalite already emitted");
+        }
       }
       var coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
-      var dataToSign = $"{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{coalite.Payload}";
+      var dataToSign = "";// TODO: Use new extension method
       var signature = Convert.ToBase64String(_rsaProvider
                                              .SignData(Encoding.UTF8.GetBytes(dataToSign),
                                                        SHA256.Create()));
-
+      var signatures = new List<CoaliteSignature>();
+      signatures.Add(new CoaliteSignature(signature, CoaliteAction.EMIT, "", "System"));
       return new CoaliteResource(coalid: coalite.Coalid,
                                  payload: coalite.Payload,
-                                 signature: signature,
+                                 signatures: signatures,
                                  seqid: coalite.FullSecondStamp,
                                  timestamp: coaliteTs);
     }
@@ -138,8 +141,9 @@ namespace Ketchup.Pizza.Services
     private Coalite GenerateCoalite(int fullSecondStamp)
     {
       var coalid = Guid.NewGuid().ToString();
-      var payload = "{}";
-      var coalite = new Coalite(coalid, payload, fullSecondStamp);
+      var payload = new CoalitePayload(new List<CoaliteSignature>());
+      var serializedPayload = JObject.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
+      var coalite = new Coalite(coalid, serializedPayload, fullSecondStamp);
       return coalite;
     }
 
@@ -147,6 +151,42 @@ namespace Ketchup.Pizza.Services
     private CoaliteDBContext GetDBConnection()
     {
       return new CoaliteDBContext(new SqliteDbDefaults(), _connectionOptionsBuilder.Options);
+    }
+    public CoaliteResource Action(CoaliteActionRequest coaliteActionRequest)
+    {
+      Coalite coalite;
+      lock (_dblock)
+      {
+        var dbcontext = GetDBConnection();
+        coalite =
+          dbcontext.Coalites
+                   .Where(c => c.Coalid == coaliteActionRequest.Coalid)
+                   .FirstOrDefault();
+        if (coalite == null)
+        {
+          throw new CoalitingException((int)HttpStatusCode.BadRequest, "Unexisting coalite");
+        }
+
+        var payload = JToken.Parse(coalite.Payload).ToObject<CoalitePayload>();
+
+        // Find coalite owner
+        var lastClaimAction = payload.Signatures.LastOrDefault(s => s.Action == CoaliteAction.CLAIM);
+
+        // Case 1: No owner and action is to claim
+        if (lastClaimAction == null && coaliteActionRequest.Signature.Action == CoaliteAction.CLAIM)
+        {
+          throw new NotImplementedException();
+        }
+
+        // Case 2
+        // Check if claimer has ownership rights
+        var pubkey = coaliteActionRequest.SignerPublicKey;
+
+        //TODO _rsaProvider.VerifyData();
+
+      }
+
+      throw new NotImplementedException();
     }
   }
 }

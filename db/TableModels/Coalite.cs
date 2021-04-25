@@ -1,9 +1,13 @@
 using System;
-
+using System.Collections.Generic;
 namespace Ketchup.Pizza.DB
 {
   public class Coalite
   {
+    public Coalite()
+    {
+    }
+
     public Coalite(string coalid,
                    string payload,
                    int fullSecondStamp)
@@ -12,7 +16,6 @@ namespace Ketchup.Pizza.DB
       Payload = payload;
       FullSecondStamp = fullSecondStamp;
     }
-
     public Guid Id { get; set; }
     public string Coalid { get; set; }
     public string Payload { get; set; }

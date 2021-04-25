@@ -29,8 +29,14 @@ namespace Ketchup.Pizza.Controllers
     [HttpGet("/Coalite")]
     public ActionResult<CoaliteResource> Coalite()
     {
-      var claimId = "System"; // Could be negotiated with the outside.
-      var coalite = _coaliter.Get(claimId);
+      var coalite = _coaliter.Get();
+      return Ok(coalite);
+    }
+
+    [HttpPost()]
+    public ActionResult<CoaliteResource> Action([FromBody] CoaliteActionRequest coaliteActionRequest)
+    {
+      var coalite = _coaliter.Action(coaliteActionRequest);
       return Ok(coalite);
     }
 
