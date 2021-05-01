@@ -23,6 +23,7 @@ namespace Ketchup.Pizza.Services
     private ILogger _logger;
     private string _keypath;
     private string _passphrase;
+    private string _serverPublicKey;
     private RSACryptoServiceProvider _rsaProvider;
     private string _connectionString;
     private static DateTime _baseDate = new DateTime(year: 2021, month: 4, day: 15, hour: 22, minute: 23, second: 0);
@@ -34,6 +35,8 @@ namespace Ketchup.Pizza.Services
       _keypath = configuration["PrivateKey"];
       _passphrase = configuration["Keypassphrase"];
       var keyData = File.ReadAllText(_keypath);
+
+      _serverPublicKey = keyData;//.Split(" ")[1].Trim();
 
       _rsaProvider = new RSACryptoServiceProvider();
       _rsaProvider.ImportFromPem(new ReadOnlySpan<char>(keyData.ToCharArray()));
@@ -73,7 +76,7 @@ namespace Ketchup.Pizza.Services
       }
       var coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
-      coalite.SignCoalite(_rsaProvider, CoaliteAction.PUBLISH, "", "System");
+      coalite.SignCoalite(_rsaProvider, CoaliteAction.PUBLISH, "", "System", "");
       coalite.Claimed = true;
       coalite.ClaimedAt = DateTime.UtcNow;
 
@@ -142,10 +145,9 @@ namespace Ketchup.Pizza.Services
       var payload = new CoalitePayload(new List<CoaliteSignature>());
       var serializedPayload = JObject.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
       var coalite = new Coalite(coalid, serializedPayload, fullSecondStamp);
-      coalite.SignCoalite(_rsaProvider, CoaliteAction.EMIT, "", "System");
+      coalite.SignCoalite(_rsaProvider, CoaliteAction.EMIT, "", _serverPublicKey, "System");
       return coalite;
     }
-
 
     private CoaliteDBContext GetDBConnection()
     {
@@ -153,7 +155,7 @@ namespace Ketchup.Pizza.Services
     }
     public CoaliteResource Action(CoaliteActionRequest coaliteActionRequest)
     {
-      // Validate request
+      // Validate whole request
       var buffer = Encoding.UTF8.GetBytes(coaliteActionRequest.GetAsSignablePayload());
       var signature = Encoding.UTF8.GetBytes(coaliteActionRequest.Signature);
       if (!_rsaProvider.VerifyData(buffer, SHA256.Create(), signature))
@@ -168,11 +170,18 @@ namespace Ketchup.Pizza.Services
         var dbcontext = GetDBConnection();
         coalite =
           dbcontext.Coalites
-                   .Where(c => c.Coalid == coaliteActionRequest.Coalid)
+                   .Where(c => c.Coalid == coaliteActionRequest.Coalite.Coalid)
                    .FirstOrDefault();
         if (coalite == null)
         {
-          throw new CoalitingException((int)HttpStatusCode.BadRequest, "Unexisting coalite");
+          throw new CoalitingException((int)HttpStatusCode.BadRequest,
+                                       "Unexisting coalite");
+        }
+
+        if (!coalite.EqualToResource(coaliteActionRequest.Coalite))
+        {
+          throw new CoalitingException((int)HttpStatusCode.BadRequest,
+                                       "Referenced coalite does not match last known coalite state");
         }
 
         var payload = coalite.LoadPayload();
@@ -181,21 +190,29 @@ namespace Ketchup.Pizza.Services
         var lastClaimAction = payload.Signatures.LastOrDefault(s => s.Action == CoaliteAction.CLAIM);
 
         // Case 1: No owner and action is to claim
-        if (lastClaimAction == null && coaliteActionRequest.Action == CoaliteAction.CLAIM)
+        // Case 2: Check if claimer has ownership rights
+
+        if (lastClaimAction != null && lastClaimAction.SignerPublicKey != coaliteActionRequest.SignerPublicKey)
         {
-          coalite.SignCoalite();// NOTE: This needs to be done by the client requester instead. Rethink.
-          throw new NotImplementedException();
+          throw new CoalitingException((int)HttpStatusCode.BadRequest,
+                                       "Coalite not owned by claimer public key");
         }
 
-        // Case 2
-        // Check if claimer has ownership rights
-        var pubkey = coaliteActionRequest.SignerPublicKey;
+        coalite.AppendSignedAction(coaliteActionRequest.Action,
+                                   coaliteActionRequest.ActionPayload,
+                                   coaliteActionRequest.SignerPublicKey,
+                                   coaliteActionRequest.SignerId,
+                                   coaliteActionRequest.ActionSignature);
+        coalite.SignCoalite(_rsaProvider, CoaliteAction.ACCEPT, "", _serverPublicKey, "System");
+        dbcontext.Update(coalite);
+        dbcontext.SaveChanges();
 
-        //TODO _rsaProvider.VerifyData();
-
+        return new CoaliteResource(coalid: coalite.Coalid,
+                                   payload: coalite.Payload,
+                                   signatures: coalite.LoadPayload().Signatures,
+                                   seqid: coalite.FullSecondStamp,
+                                   timestamp: _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp));
       }
-
-      throw new NotImplementedException();
     }
   }
 }

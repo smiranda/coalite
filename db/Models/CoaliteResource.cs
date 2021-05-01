@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
 
 namespace Ketchup.Pizza.Models
 {
@@ -17,6 +17,11 @@ namespace Ketchup.Pizza.Models
       Seqid = seqid;
       Payload = payload;
       Timestamp = timestamp;
+    }
+    public string GetAsSignablePayload(string additionalPayload)
+    {
+      var normalizedPayload = JToken.FromObject(Signatures).ToString(Newtonsoft.Json.Formatting.None);
+      return $"{Seqid.ToString()}{Coalid}{normalizedPayload}{additionalPayload}";
     }
     public string Coalid { get; set; }
     public List<CoaliteSignature> Signatures { get; set; }

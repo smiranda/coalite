@@ -16,18 +16,33 @@ namespace Ketchup.Pizza.Models
       var normalizedPayload = JToken.Parse(coalite.Payload).ToString(Newtonsoft.Json.Formatting.None);
       return $"{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{normalizedPayload}";
     }
+    public static void AppendSignedAction(this Coalite coalite,
+                                          CoaliteAction action,
+                                          string actionPayload,
+                                          string signerPublicKey,
+                                          string signerId,
+                                          string signatureBlob)
+    {
+      var signature = new CoaliteSignature(action, actionPayload, signerPublicKey, signerId);
+      signature.StoreSignature(signatureBlob);
+
+      var coalitePayload = coalite.LoadPayload();
+      coalitePayload.Signatures.Add(signature);
+      coalite.StorePayload(coalitePayload);
+    }
+
     public static void SignCoalite(this Coalite coalite,
                                    RSACryptoServiceProvider signerRSA,
                                    CoaliteAction action,
                                    string actionPayload,
+                                   string signerPublicKey,
                                    string signerId)
     {
-      var signature = new CoaliteSignature(action, actionPayload, signerId);
+      var signature = new CoaliteSignature(action, actionPayload, signerPublicKey, signerId);
       var presignPayload = signature.GetPresignPayload();
 
       var coalitePayload = coalite.LoadPayload();
-      var normalizedPayload = coalite.LoadPayloadAsString();
-      var dataToSign = $"{coalite.Created.ToString()}{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{normalizedPayload}{presignPayload}";
+      var dataToSign = coalite.GetAsSignablePayload(presignPayload);
       var signatureBlob = Convert.ToBase64String(signerRSA
                                                  .SignData(Encoding.UTF8.GetBytes(dataToSign),
                                                            SHA256.Create()));

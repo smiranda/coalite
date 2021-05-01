@@ -1,13 +1,13 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using Ketchup.Pizza.DB;
 using Microsoft.AspNetCore.Http;
 
 namespace Ketchup.Pizza.Models
 {
   public class CoaliteActionRequest
   {
-    [StringLength(36)]
-    public string Coalid { get; set; }
+    public CoaliteResource Coalite { get; set; }
     [StringLength(1000)]
     public string SignerPublicKey { get; set; }
     public CoaliteAction Action { get; set; }
@@ -16,10 +16,11 @@ namespace Ketchup.Pizza.Models
     [StringLength(1000)]
     public string SignerId { get; set; }
     [StringLength(1000)]
+    public string ActionSignature { get; set; }
     public string Signature { get; set; }
     public string GetAsSignablePayload()
     {
-      return $"{Coalid}{SignerPublicKey}{Action.ToString()}{ActionPayload}{SignerId}";
+      return Coalite.GetAsSignablePayload($"{SignerPublicKey}{Action.ToString()}{ActionPayload}{SignerId}");
     }
   }
 }

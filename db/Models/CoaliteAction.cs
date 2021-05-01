@@ -6,6 +6,7 @@ namespace Ketchup.Pizza.Models
     PUBLISH,
     CLAIM,
     TRANSFER, // TODO: Think
+    ACCEPT,
     MINT,
     BURN
   }

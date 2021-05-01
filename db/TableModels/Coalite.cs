@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ketchup.Pizza.Models;
 using Newtonsoft.Json.Linq;
 
@@ -33,6 +34,21 @@ namespace Ketchup.Pizza.DB
     public void StorePayload(CoalitePayload payload)
     {
       Payload = JToken.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    public string GetAsSignablePayload(string additionalPayload)
+    {
+      var normalizedPayload = LoadPayloadAsString();
+      return $"{FullSecondStamp.ToString()}{Coalid}{normalizedPayload}{additionalPayload}";
+    }
+
+    public bool EqualToResource(CoaliteResource coaliteResource)
+    {
+      var deserializedPayload = LoadPayload();
+      return (coaliteResource.Coalid == Coalid &&
+              coaliteResource.Payload == Payload &&
+              coaliteResource.Seqid == FullSecondStamp &&
+              coaliteResource.Signatures.SequenceEqual(deserializedPayload.Signatures));
     }
 
     public Guid Id { get; set; }
