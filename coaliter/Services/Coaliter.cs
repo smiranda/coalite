@@ -73,15 +73,13 @@ namespace Ketchup.Pizza.Services
       }
       var coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
-      var dataToSign = "";// TODO: Use new extension method
-      var signature = Convert.ToBase64String(_rsaProvider
-                                             .SignData(Encoding.UTF8.GetBytes(dataToSign),
-                                                       SHA256.Create()));
-      var signatures = new List<CoaliteSignature>();
-      signatures.Add(new CoaliteSignature(signature, CoaliteAction.EMIT, "", "System"));
+      coalite.SignCoalite(_rsaProvider, CoaliteAction.PUBLISH, "", "System");
+      coalite.Claimed = true;
+      coalite.ClaimedAt = DateTime.UtcNow;
+
       return new CoaliteResource(coalid: coalite.Coalid,
                                  payload: coalite.Payload,
-                                 signatures: signatures,
+                                 signatures: coalite.LoadPayload().Signatures,
                                  seqid: coalite.FullSecondStamp,
                                  timestamp: coaliteTs);
     }
@@ -144,6 +142,7 @@ namespace Ketchup.Pizza.Services
       var payload = new CoalitePayload(new List<CoaliteSignature>());
       var serializedPayload = JObject.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
       var coalite = new Coalite(coalid, serializedPayload, fullSecondStamp);
+      coalite.SignCoalite(_rsaProvider, CoaliteAction.EMIT, "", "System");
       return coalite;
     }
 
@@ -154,6 +153,15 @@ namespace Ketchup.Pizza.Services
     }
     public CoaliteResource Action(CoaliteActionRequest coaliteActionRequest)
     {
+      // Validate request
+      var buffer = Encoding.UTF8.GetBytes(coaliteActionRequest.GetAsSignablePayload());
+      var signature = Encoding.UTF8.GetBytes(coaliteActionRequest.Signature);
+      if (!_rsaProvider.VerifyData(buffer, SHA256.Create(), signature))
+      {
+        throw new CoalitingException((int)HttpStatusCode.BadRequest,
+                                     "Signature does not match public key");
+      }
+
       Coalite coalite;
       lock (_dblock)
       {
@@ -167,14 +175,15 @@ namespace Ketchup.Pizza.Services
           throw new CoalitingException((int)HttpStatusCode.BadRequest, "Unexisting coalite");
         }
 
-        var payload = JToken.Parse(coalite.Payload).ToObject<CoalitePayload>();
+        var payload = coalite.LoadPayload();
 
         // Find coalite owner
         var lastClaimAction = payload.Signatures.LastOrDefault(s => s.Action == CoaliteAction.CLAIM);
 
         // Case 1: No owner and action is to claim
-        if (lastClaimAction == null && coaliteActionRequest.Signature.Action == CoaliteAction.CLAIM)
+        if (lastClaimAction == null && coaliteActionRequest.Action == CoaliteAction.CLAIM)
         {
+          coalite.SignCoalite();// NOTE: This needs to be done by the client requester instead. Rethink.
           throw new NotImplementedException();
         }
 

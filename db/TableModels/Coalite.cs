@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Ketchup.Pizza.Models;
+using Newtonsoft.Json.Linq;
+
 namespace Ketchup.Pizza.DB
 {
   public class Coalite
@@ -16,6 +19,22 @@ namespace Ketchup.Pizza.DB
       Payload = payload;
       FullSecondStamp = fullSecondStamp;
     }
+
+    public CoalitePayload LoadPayload()
+    {
+      return JToken.Parse(Payload).ToObject<CoalitePayload>();
+    }
+
+    public string LoadPayloadAsString()
+    {
+      return JToken.Parse(Payload).ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    public void StorePayload(CoalitePayload payload)
+    {
+      Payload = JToken.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
+    }
+
     public Guid Id { get; set; }
     public string Coalid { get; set; }
     public string Payload { get; set; }

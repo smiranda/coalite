@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Ketchup.Pizza.DB;
 using Newtonsoft.Json.Linq;
 
@@ -14,14 +16,24 @@ namespace Ketchup.Pizza.Models
       var normalizedPayload = JToken.Parse(coalite.Payload).ToString(Newtonsoft.Json.Formatting.None);
       return $"{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{normalizedPayload}";
     }
-    public static string ToVerifiableString(this Coalite coalite)
+    public static void SignCoalite(this Coalite coalite,
+                                   RSACryptoServiceProvider signerRSA,
+                                   CoaliteAction action,
+                                   string actionPayload,
+                                   string signerId)
     {
-      // Does not include latest sig 
-      // TODO: Should generalize this to all positions in the list ?
-      var payload = JToken.Parse(coalite.Payload).ToObject<CoalitePayload>();
-      payload.Signatures = payload.Signatures.SkipLast(1).ToList();
-      var normalizedPayload = JToken.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
-      return $"{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{normalizedPayload}";
+      var signature = new CoaliteSignature(action, actionPayload, signerId);
+      var presignPayload = signature.GetPresignPayload();
+
+      var coalitePayload = coalite.LoadPayload();
+      var normalizedPayload = coalite.LoadPayloadAsString();
+      var dataToSign = $"{coalite.Created.ToString()}{coalite.FullSecondStamp.ToString()}{coalite.Coalid}{normalizedPayload}{presignPayload}";
+      var signatureBlob = Convert.ToBase64String(signerRSA
+                                                 .SignData(Encoding.UTF8.GetBytes(dataToSign),
+                                                           SHA256.Create()));
+      signature.StoreSignature(signatureBlob);
+      coalitePayload.Signatures.Add(signature);
+      coalite.StorePayload(coalitePayload);
     }
   }
 }

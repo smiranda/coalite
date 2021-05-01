@@ -33,7 +33,7 @@ namespace Ketchup.Pizza.Controllers
       return Ok(coalite);
     }
 
-    [HttpPost()]
+    [HttpPost]
     public ActionResult<CoaliteResource> Action([FromBody] CoaliteActionRequest coaliteActionRequest)
     {
       var coalite = _coaliter.Action(coaliteActionRequest);
