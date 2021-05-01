@@ -1,0 +1,25 @@
+@page "/counter"
+@inject HttpClient Http
+
+<h1>Counter</h1>
+
+<p>
+    <label>Private Key</label>
+    <textarea @bind="inputPubK" />
+</p>
+<p>
+    <label>Public Key</label>
+    <textarea @bind="inputPrivK" />
+</p>
+<button class="btn btn-primary" @onclick="GetCoalite">Get Coalite</button>
+
+@code {
+    public string inputPubK { get; set; }
+    public string inputPrivK { get; set; }
+
+    private async Task GetCoalite()
+    {
+        var coalite = await Http.GetStringAsync("http://localhost:5000/coalite");
+        Console.WriteLine(coalite);
+    }
+}
