@@ -205,6 +205,12 @@ namespace Ketchup.Pizza.Services
                                    coaliteActionRequest.SignerId,
                                    coaliteActionRequest.ActionSignature);
         coalite.SignCoalite(_rsaProvider, CoaliteAction.ACCEPT, "", _serverPublicKey, "System");
+
+        if (coaliteActionRequest.Action == CoaliteAction.CLAIM)
+        {
+          coalite.ClaimedBy = coaliteActionRequest.SignerId;
+        }
+
         dbcontext.Update(coalite);
         dbcontext.SaveChanges();
 
