@@ -22,6 +22,7 @@ namespace Ketchup.Pizza.Services
     private object _dblock;
     private ILogger _logger;
     private string _keypath;
+    private string _pubKeyPath;
     private string _passphrase;
     private string _serverPublicKey;
     private RSACryptoServiceProvider _rsaProvider;
@@ -33,11 +34,11 @@ namespace Ketchup.Pizza.Services
                     ILogger<Coaliter> logger)
     {
       _keypath = configuration["PrivateKey"];
+      _pubKeyPath = configuration["PublicKey"];
       _passphrase = configuration["Keypassphrase"];
       var keyData = File.ReadAllText(_keypath);
 
-      _serverPublicKey = keyData;//.Split(" ")[1].Trim();
-
+      _serverPublicKey = File.ReadAllText(_pubKeyPath).Trim();
       _rsaProvider = new RSACryptoServiceProvider();
       _rsaProvider.ImportFromPem(new ReadOnlySpan<char>(keyData.ToCharArray()));
 
