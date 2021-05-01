@@ -33,6 +33,11 @@ namespace Ketchup.Pizza
     public void ConfigureServices(IServiceCollection services)
     {
       services.AddControllers();
+      services.AddMvc().AddNewtonsoftJson(options =>
+      {
+        options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+        options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
+      });
       services.AddSwaggerGen(c =>
       {
         c.SwaggerDoc("v1", new OpenApiInfo { Title = "coaliter", Version = "v1" });

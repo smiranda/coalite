@@ -29,8 +29,15 @@ namespace Ketchup.Pizza.Controllers
     [HttpGet("/Coalite")]
     public ActionResult<CoaliteResource> Coalite()
     {
-      var coalite = _coaliter.Get();
-      return Ok(coalite);
+      try
+      {
+        var coalite = _coaliter.Get();
+        return Ok(coalite);
+      }
+      catch (CoalitingException e)
+      {
+        return BadRequest(new { Error = e.Message });
+      }
     }
 
     [HttpPost]

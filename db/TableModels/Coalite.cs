@@ -46,7 +46,6 @@ namespace Ketchup.Pizza.DB
     {
       var deserializedPayload = LoadPayload();
       return (coaliteResource.Coalid == Coalid &&
-              coaliteResource.Payload == Payload &&
               coaliteResource.Seqid == FullSecondStamp &&
               coaliteResource.Signatures.SequenceEqual(deserializedPayload.Signatures));
     }

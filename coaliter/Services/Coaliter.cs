@@ -63,6 +63,7 @@ namespace Ketchup.Pizza.Services
     public CoaliteResource Get()
     {
       Coalite coalite;
+      DateTime coaliteTs;
       lock (_dblock)
       {
         var dbcontext = GetDBConnection();
@@ -74,15 +75,14 @@ namespace Ketchup.Pizza.Services
         {
           throw new CoalitingException((int)HttpStatusCode.BadRequest, "Current coalite already emitted");
         }
+        coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
+
+        coalite.SignCoalite(_rsaProvider, CoaliteAction.PUBLISH, "", _serverPublicKey, "System");
+        coalite.Claimed = true;
+        coalite.ClaimedAt = DateTime.UtcNow;
+        dbcontext.SaveChanges();
       }
-      var coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
-
-      coalite.SignCoalite(_rsaProvider, CoaliteAction.PUBLISH, "", "System", "");
-      coalite.Claimed = true;
-      coalite.ClaimedAt = DateTime.UtcNow;
-
       return new CoaliteResource(coalid: coalite.Coalid,
-                                 payload: coalite.Payload,
                                  signatures: coalite.LoadPayload().Signatures,
                                  seqid: coalite.FullSecondStamp,
                                  timestamp: coaliteTs);
@@ -215,7 +215,6 @@ namespace Ketchup.Pizza.Services
         dbcontext.SaveChanges();
 
         return new CoaliteResource(coalid: coalite.Coalid,
-                                   payload: coalite.Payload,
                                    signatures: coalite.LoadPayload().Signatures,
                                    seqid: coalite.FullSecondStamp,
                                    timestamp: _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp));
