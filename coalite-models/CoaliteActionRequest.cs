@@ -31,6 +31,7 @@ namespace Ketchup.Pizza.Models
     public string SignerId { get; set; }
     [StringLength(1000)]
     public string ActionSignature { get; set; }
+    [StringLength(1000)]
     public string Signature { get; set; }
     public string GetAsSignablePayload()
     {

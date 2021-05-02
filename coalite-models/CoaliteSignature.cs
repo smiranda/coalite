@@ -43,11 +43,12 @@ namespace Ketchup.Pizza.Models
 
     [StringLength(1000)]
     public string Signature { get; set; }
-    [StringLength(64)]
     public CoaliteAction Action { get; set; }
     [StringLength(1000000)]
     public string ActionPayload { get; set; }
+    [StringLength(1000)]
     public string SignerPublicKey { get; set; }
+    [StringLength(1000)]
     public string SignerId { get; }
   }
 }

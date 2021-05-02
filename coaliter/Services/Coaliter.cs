@@ -158,7 +158,7 @@ namespace Ketchup.Pizza.Services
     {
       // Validate whole request
       var buffer = Encoding.UTF8.GetBytes(coaliteActionRequest.GetAsSignablePayload());
-      var signature = Encoding.UTF8.GetBytes(coaliteActionRequest.Signature);
+      var signature = Convert.FromBase64String(coaliteActionRequest.Signature);
       if (!_rsaProvider.VerifyData(buffer, SHA256.Create(), signature))
       {
         throw new CoalitingException((int)HttpStatusCode.BadRequest,

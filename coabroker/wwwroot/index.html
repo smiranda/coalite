@@ -11,6 +11,9 @@
     <link href="coabroker.styles.css" rel="stylesheet" />
 
     <script>
+
+
+
         window.bootFn = (msg) => {
             console.log(msg);
         };
@@ -36,10 +39,8 @@
             return base64ToArrayBuffer(b64Final);
         }
 
-        // Read: https://stackoverflow.com/questions/38677742/cryptokey-arraybuffer-to-base64-and-back/38714970#38714970
-        // Also future: https://docs.microsoft.com/en-us/aspnet/core/blazor/call-dotnet-from-javascript?view=aspnetcore-5.0
-        window.signData = (dataToSign) => {
-            window.crypto.subtle.generateKey(
+        window.getKey = () => {
+            return window.crypto.subtle.generateKey(
                 {
                     name: "RSA-OAEP",
                     modulusLength: 2048,
@@ -48,12 +49,22 @@
                 },
                 true,
                 ["encrypt", "decrypt"]
-            ).then(function (keyPair) {
-                console.log(keyPair);
-                dataToSign
-                window.crypto.subtle.sign("RSA-OAEP", keyPair.privateKey,)
+            );
+        };
 
-            });
+        // Read: https://stackoverflow.com/questions/38677742/cryptokey-arraybuffer-to-base64-and-back/38714970#38714970
+        // Also future: https://docs.microsoft.com/en-us/aspnet/core/blazor/call-dotnet-from-javascript?view=aspnetcore-5.0
+        window.signData = (dataToSign) => {
+            return window.crypto.subtle.generateKey(
+                {
+                    name: "RSA-OAEP",
+                    modulusLength: 2048,
+                    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                    hash: { name: "SHA-256" }
+                },
+                true,
+                ["encrypt", "decrypt"]
+            );
 
             /*window.crypto.subtle.importKey(
                 "pkcs8",
