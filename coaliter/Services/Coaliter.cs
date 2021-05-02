@@ -192,7 +192,6 @@ namespace Ketchup.Pizza.Services
 
         // Case 1: No owner and action is to claim
         // Case 2: Check if claimer has ownership rights
-
         if (lastClaimAction != null && lastClaimAction.SignerPublicKey != coaliteActionRequest.SignerPublicKey)
         {
           throw new CoalitingException((int)HttpStatusCode.BadRequest,

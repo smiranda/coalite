@@ -23,7 +23,10 @@ namespace Ketchup.Pizza.Models
                                           string signerId,
                                           string signatureBlob)
     {
-      var signature = new CoaliteSignature(action, actionPayload, signerPublicKey, signerId);
+      var signature = new CoaliteSignature(action,
+                                           actionPayload,
+                                           signerPublicKey,
+                                           signerId);
       signature.StoreSignature(signatureBlob);
 
       var coalitePayload = coalite.LoadPayload();

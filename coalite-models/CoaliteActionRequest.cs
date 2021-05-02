@@ -1,12 +1,26 @@
-using System;
 using System.ComponentModel.DataAnnotations;
-using Ketchup.Pizza.DB;
-using Microsoft.AspNetCore.Http;
 
 namespace Ketchup.Pizza.Models
 {
   public class CoaliteActionRequest
   {
+    public CoaliteActionRequest()
+    {
+    }
+
+    public CoaliteActionRequest(CoaliteResource coalite,
+                                string signerPublicKey,
+                                CoaliteAction action,
+                                string actionPayload,
+                                string signerId)
+    {
+      Coalite = coalite;
+      SignerPublicKey = signerPublicKey;
+      Action = action;
+      ActionPayload = actionPayload;
+      SignerId = signerId;
+    }
+
     public CoaliteResource Coalite { get; set; }
     [StringLength(1000)]
     public string SignerPublicKey { get; set; }

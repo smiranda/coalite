@@ -1,25 +1,45 @@
 @page "/counter"
+@using Ketchup.Pizza.Models
+@using Newtonsoft.Json.Linq
 @inject HttpClient Http
+@inject IJSRuntime JS;
 
 <h1>Counter</h1>
 
 <p>
     <label>Private Key</label>
-    <textarea @bind="inputPubK" />
+    <textarea @bind="inputPrivK" />
 </p>
 <p>
     <label>Public Key</label>
-    <textarea @bind="inputPrivK" />
+    <textarea @bind="inputPubK" />
+</p>
+<p>
+    <label>User Id</label>
+    <textarea @bind="inputId" />
 </p>
 <button class="btn btn-primary" @onclick="GetCoalite">Get Coalite</button>
 
 @code {
     public string inputPubK { get; set; }
     public string inputPrivK { get; set; }
+    public string inputId { get; set; }
 
     private async Task GetCoalite()
     {
-        var coalite = await Http.GetStringAsync("http://localhost:5000/coalite");
-        Console.WriteLine(coalite);
+        await JS.InvokeVoidAsync("bootFn", "boot");
+        await JS.InvokeVoidAsync("signData", inputPrivK);
+        /*
+        var rsaProvider = new RSACryptoServiceProvider();
+        rsaProvider.ImportFromPem(new ReadOnlySpan<char>(inputPrivK.ToCharArray()));
+
+        var response = await Http.GetStringAsync("http://localhost:5000/coalite");
+        var coaliteResource = JToken.Parse(response).ToObject<CoaliteResource>();
+        var request = coaliteResource.CreateActionRequest(rsaProvider, CoaliteAction.CLAIM, "", inputPubK, inputId);
+        var result = await Http.PostAsJsonAsync("http://localhost:5000/coalite/action", request);
+        result.EnsureSuccessStatusCode();
+        var finalResult = await result.Content.ReadAsStringAsync();
+        Console.WriteLine(finalResult);
+        */
     }
 }
