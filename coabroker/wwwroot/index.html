@@ -40,7 +40,7 @@
         }
 
         window.getKey = () => {
-            return window.crypto.subtle.generateKey(
+            window.crypto.subtle.generateKey(
                 {
                     name: "RSA-OAEP",
                     modulusLength: 2048,
@@ -49,35 +49,76 @@
                 },
                 true,
                 ["encrypt", "decrypt"]
-            );
+            ).then((r) => {
+                let a = JSON.stringify(r);
+                console.log(a);
+                DotNet.invokeMethod("coabroker", "CalculateSquareRoot", a);
+            })
+            return "";
         };
+
+
+        function stringToArrayBuffer(byteString) {
+            var byteArray = new Uint8Array(byteString.length);
+            for (var i = 0; i < byteString.length; i++) {
+                byteArray[i] = byteString.codePointAt(i);
+            }
+            return byteArray;
+        }
+        function base64StringToArrayBuffer(b64str) {
+            var byteStr = atob(b64str)
+            var bytes = new Uint8Array(byteStr.length)
+            for (var i = 0; i < byteStr.length; i++) {
+                bytes[i] = byteStr.charCodeAt(i)
+            }
+            return bytes.buffer
+        }
+
+        function convertPemToBinary(pem) {
+            var lines = pem.split('\n')
+            var encoded = ''
+            for (var i = 0; i < lines.length; i++) {
+                if (lines[i].trim().length > 0 &&
+                    lines[i].indexOf('-BEGIN RSA PRIVATE KEY-') < 0 &&
+                    lines[i].indexOf('-BEGIN RSA PUBLIC KEY-') < 0 &&
+                    lines[i].indexOf('-END RSA PRIVATE KEY-') < 0 &&
+                    lines[i].indexOf('-END RSA PUBLIC KEY-') < 0) {
+                    encoded += lines[i].trim()
+                }
+            }
+            return base64StringToArrayBuffer(encoded)
+        }
 
         // Read: https://stackoverflow.com/questions/38677742/cryptokey-arraybuffer-to-base64-and-back/38714970#38714970
         // Also future: https://docs.microsoft.com/en-us/aspnet/core/blazor/call-dotnet-from-javascript?view=aspnetcore-5.0
-        window.signData = (dataToSign) => {
-            return window.crypto.subtle.generateKey(
-                {
-                    name: "RSA-OAEP",
-                    modulusLength: 2048,
-                    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                    hash: { name: "SHA-256" }
-                },
-                true,
-                ["encrypt", "decrypt"]
-            );
-
-            /*window.crypto.subtle.importKey(
-                "pkcs8",
-                pemToArrayBuffer(privKey),
-                {
-                    name: "RSA-OAEP",
-                    hash: { name: "SHA-256" }
-                },
-                true,
-                ["decrypt"]
-            ).then(function (importedPrivateKey) {
-                console.log(importedPrivateKey);
-            });*/
+        window.sign2Data = (privKey) => {
+            try {
+                //  console.log(privKey);~
+                var signAlgorithm = {
+                    name: "RSASSA-PKCS1-v1_5",
+                    hash: "SHA-256",
+                    modulusLength: 4096,
+                    extractable: false,
+                    publicExponent: new Uint8Array([1, 0, 1])
+                }
+                window.crypto.subtle.importKey(
+                    "pkcs8",
+                    convertPemToBinary(privKey),
+                    signAlgorithm,
+                    true,
+                    ["sign"]
+                ).then(function (importedPrivateKey) {
+                    try {
+                        console.log("AAA");
+                        console.log(importedPrivateKey);
+                    } catch (e) {
+                        console.log(e);
+                    }
+                });
+            } catch (e) {
+                console.log(e);
+            }
+            return "";
             /* var signature = "Hello world";
              var rsa = new RSAKey();
              rsa.setPrivate(modulus, publicExponent, privateExponent);

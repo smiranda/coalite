@@ -35,7 +35,7 @@ namespace Ketchup.Pizza.Models
     }
 
     public static void SignCoalite(this Coalite coalite,
-                                   RSACryptoServiceProvider signerRSA,
+                                   RSA signerRSA,
                                    CoaliteAction action,
                                    string actionPayload,
                                    string signerPublicKey,
@@ -48,7 +48,8 @@ namespace Ketchup.Pizza.Models
       var dataToSign = coalite.GetAsSignablePayload(presignPayload);
       var signatureBlob = Convert.ToBase64String(signerRSA
                                                  .SignData(Encoding.UTF8.GetBytes(dataToSign),
-                                                           SHA256.Create()));
+                                                           HashAlgorithmName.SHA256,
+                                                           RSASignaturePadding.Pkcs1));
       signature.StoreSignature(signatureBlob);
       coalitePayload.Signatures.Add(signature);
       coalite.StorePayload(coalitePayload);

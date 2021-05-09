@@ -434,4 +434,5 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 credentials.json
-coalite*.json
+*.prv
+*.pub

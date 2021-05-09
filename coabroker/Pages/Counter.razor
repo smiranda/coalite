@@ -25,22 +25,19 @@
     public string inputPrivK { get; set; }
     public string inputId { get; set; }
 
+    [JSInvokable]
+    public static void CalculateSquareRoot(string key)
+    {
+        Console.WriteLine(key);
+    }
+
     private async Task GetCoalite()
     {
-        var response = await Http.GetStringAsync("http://localhost:5000/coalite");
-        var coaliteResource = JToken.Parse(response).ToObject<CoaliteResource>();
-        var request = coaliteResource.CreateActionRequest(rsaProvider, CoaliteAction.CLAIM, "", inputPubK, inputId);
-        var result = await Http.PostAsJsonAsync("http://localhost:5000/coalite/action", request);
-        result.EnsureSuccessStatusCode();
-        var finalResult = await result.Content.ReadAsStringAsync();
-        Console.WriteLine(finalResult);
-
-        /*
         await JS.InvokeVoidAsync("bootFn", "boot");
-        //await JS.InvokeVoidAsync("signData", inputPrivK);
-        var o = await JS.InvokeAsync<object>("getKey", inputPrivK);
-        Console.WriteLine(JToken.FromObject(o).ToString());
-        */
+        //await JS.InvokeAsync<string>("getKey", inputPrivK);
+        await JS.InvokeVoidAsync("sign2Data", inputPrivK);
+
+        return;
 
         /*
         var rsaProvider = new RSACryptoServiceProvider();

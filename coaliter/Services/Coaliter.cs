@@ -25,7 +25,7 @@ namespace Ketchup.Pizza.Services
     private string _pubKeyPath;
     private string _passphrase;
     private string _serverPublicKey;
-    private RSACryptoServiceProvider _rsaProvider;
+    private RSA _rsa;
     private string _connectionString;
     private static DateTime _baseDate = new DateTime(year: 2021, month: 4, day: 15, hour: 22, minute: 23, second: 0);
     private DbContextOptionsBuilder<CoaliteDBContext> _connectionOptionsBuilder;
@@ -39,8 +39,8 @@ namespace Ketchup.Pizza.Services
       var keyData = File.ReadAllText(_keypath);
 
       _serverPublicKey = File.ReadAllText(_pubKeyPath).Trim();
-      _rsaProvider = new RSACryptoServiceProvider();
-      _rsaProvider.ImportFromPem(new ReadOnlySpan<char>(keyData.ToCharArray()));
+      _rsa = RSA.Create();
+      _rsa.ImportFromPem(new ReadOnlySpan<char>(keyData.ToCharArray()));
 
       _connectionString = configuration["State:ConnectionString"];
       _connectionOptionsBuilder = new DbContextOptionsBuilder<CoaliteDBContext>();
@@ -77,7 +77,7 @@ namespace Ketchup.Pizza.Services
         }
         coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
-        coalite.SignCoalite(_rsaProvider, CoaliteAction.PUBLISH, "", _serverPublicKey, "System");
+        coalite.SignCoalite(_rsa, CoaliteAction.PUBLISH, "", _serverPublicKey, "System");
         coalite.Claimed = true;
         coalite.ClaimedAt = DateTime.UtcNow;
         dbcontext.SaveChanges();
@@ -146,7 +146,7 @@ namespace Ketchup.Pizza.Services
       var payload = new CoalitePayload(new List<CoaliteSignature>());
       var serializedPayload = JObject.FromObject(payload).ToString(Newtonsoft.Json.Formatting.None);
       var coalite = new Coalite(coalid, serializedPayload, fullSecondStamp);
-      coalite.SignCoalite(_rsaProvider, CoaliteAction.EMIT, "", _serverPublicKey, "System");
+      coalite.SignCoalite(_rsa, CoaliteAction.EMIT, "", _serverPublicKey, "System");
       return coalite;
     }
 
@@ -159,7 +159,11 @@ namespace Ketchup.Pizza.Services
       // Validate whole request
       var buffer = Encoding.UTF8.GetBytes(coaliteActionRequest.GetAsSignablePayload());
       var signature = Convert.FromBase64String(coaliteActionRequest.Signature);
-      if (!_rsaProvider.VerifyData(buffer, SHA256.Create(), signature))
+      var clientRsa = RSA.Create();
+      int bytesReadPk;
+      var pk = coaliteActionRequest.SignerPublicKey.Split(' ').OrderByDescending(s => s.Length).FirstOrDefault();
+      clientRsa.ImportRSAPublicKey(Convert.FromBase64String(pk), out bytesReadPk);
+      if (!clientRsa.VerifyData(buffer, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
       {
         throw new CoalitingException((int)HttpStatusCode.BadRequest,
                                      "Signature does not match public key");
@@ -203,7 +207,7 @@ namespace Ketchup.Pizza.Services
                                    coaliteActionRequest.SignerPublicKey,
                                    coaliteActionRequest.SignerId,
                                    coaliteActionRequest.ActionSignature);
-        coalite.SignCoalite(_rsaProvider, CoaliteAction.ACCEPT, "", _serverPublicKey, "System");
+        coalite.SignCoalite(_rsa, CoaliteAction.ACCEPT, "", _serverPublicKey, "System");
 
         if (coaliteActionRequest.Action == CoaliteAction.CLAIM)
         {

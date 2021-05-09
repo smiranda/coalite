@@ -18,7 +18,7 @@ namespace Ketchup.Pizza.Models
       Seqid = seqid;
       Timestamp = timestamp;
     }
-    public CoaliteActionRequest CreateActionRequest(RSACryptoServiceProvider signerRSA,
+    public CoaliteActionRequest CreateActionRequest(RSA signerRSA,
                                                     CoaliteAction action,
                                                     string actionPayload,
                                                     string signerPublicKey,
@@ -38,13 +38,15 @@ namespace Ketchup.Pizza.Models
       var dataToSign = request.Coalite.GetAsSignablePayload(presignPayload);
       request.ActionSignature = Convert.ToBase64String(signerRSA
                                        .SignData(Encoding.UTF8.GetBytes(dataToSign),
-                                                 SHA256.Create()));
+                                                 HashAlgorithmName.SHA256,
+                                                 RSASignaturePadding.Pkcs1));
 
       // Create request signature
       dataToSign = request.GetAsSignablePayload();
       request.Signature = Convert.ToBase64String(signerRSA
                                        .SignData(Encoding.UTF8.GetBytes(dataToSign),
-                                                 SHA256.Create()));
+                                                 HashAlgorithmName.SHA256,
+                                                 RSASignaturePadding.Pkcs1));
       return request;
     }
 

@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
-    <PackageVersion>1.1.0</PackageVersion>
-    <ToolCommandName>coaget</ToolCommandName>
+    <PackageVersion>1.0.0</PackageVersion>
+    <ToolCommandName>coakeygen</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <!--To update locally: (remove '\'')-->
     <!--dotnet tool update \-\-add-source=./nupkg \-\-no-cache \-\-global coaget \-\-version x.x.x-->
@@ -13,10 +12,4 @@
     <!--dotnet tool update \-\-no-cache \-\-global coaget \-\-version x.x.x-->
     <!--To install use 'install' command instead of 'update' command-->
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <ProjectReference Include="..\coalite-models\coalite-models.csproj" />
-  </ItemGroup>
-
 </Project>
