@@ -36,7 +36,7 @@
     {
         await JS.InvokeVoidAsync("bootFn", "boot");
 
-        var response = await Http.GetStringAsync("https://coaliter.ketchup.pizza/coalite/action");
+        var response = await Http.GetStringAsync("https://coaliter.ketchup.pizza/coalite");
         var coaliteResource = JToken.Parse(response).ToObject<CoaliteResource>();
 
         var action = CoaliteAction.CLAIM;
