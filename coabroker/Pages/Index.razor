@@ -1,7 +1,76 @@
-﻿@page "/"
+@page "/"
+@using Ketchup.Pizza.Models
+@using Newtonsoft.Json.Linq
+@inject HttpClient Http
+@inject IJSRuntime JS;
 
-<h1>Hello, world!</h1>
+<h1>Claim Coalites</h1>
 
-Welcome to your new app.
+<p>
+    <label>Private Key</label>
+    <textarea @bind="inputPrivK" />
+</p>
+<p>
+    <label>Public Key</label>
+    <textarea @bind="inputPubK" />
+</p>
+<p>
+    <label>User Id</label>
+    <textarea @bind="inputId" />
+</p>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+<button class="btn btn-primary" @onclick="GetCoalite">Get Coalite</button>
+
+<p>
+    <label>Coalite Output</label>
+    <textarea @bind="outputCoalite" />
+</p>
+
+@code {
+    public string inputPubK { get; set; }
+    public string inputPrivK { get; set; }
+    public string inputId { get; set; }
+    public string outputCoalite { get; set; }
+
+    private async Task GetCoalite()
+    {
+        await JS.InvokeVoidAsync("bootFn", "boot");
+
+        var response = await Http.GetStringAsync("https://lore.ketchup.pizza/coalite");
+        var coaliteResource = JToken.Parse(response).ToObject<CoaliteResource>();
+
+        var action = CoaliteAction.CLAIM;
+        var actionPayload = "";
+        var signerId = inputId;
+        var signerPublicKey = inputPubK;
+        var request = new CoaliteActionRequest(
+        coaliteResource,
+        signerPublicKey,
+        action,
+        actionPayload,
+        signerId);
+
+        // Create action signature
+        var signature = new CoaliteSignature(action,
+        actionPayload,
+        signerPublicKey,
+        signerId);
+
+        var presignPayload = signature.GetPresignPayload();
+        var dataToSign = request.Coalite.GetAsSignablePayload(presignPayload);
+
+        var b64Blob = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(dataToSign));
+        request.ActionSignature = await JS.InvokeAsync<string>("signData", inputPrivK, b64Blob);
+
+        // Create request signature
+        dataToSign = request.GetAsSignablePayload();
+        b64Blob = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(dataToSign));
+        request.Signature = await JS.InvokeAsync<string>("signData", inputPrivK, b64Blob);
+
+        var result = await Http.PostAsJsonAsync("https://lore.ketchup.pizza/coalite/action", request);
+        result.EnsureSuccessStatusCode();
+        var finalResult = await result.Content.ReadAsStringAsync();
+        Console.WriteLine(finalResult);
+        outputCoalite = finalResult;
+    }
+}

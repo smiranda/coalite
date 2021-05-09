@@ -12,51 +12,9 @@
 
     <script>
 
-
-
         window.bootFn = (msg) => {
             console.log(msg);
         };
-        function removeLines(str) {
-            return str.replace("\n", "").replace("\r", "");
-        }
-
-        function base64ToArrayBuffer(b64) {
-            var byteString = window.atob(b64);
-            var byteArray = new Uint8Array(byteString.length);
-            for (var i = 0; i < byteString.length; i++) {
-                byteArray[i] = byteString.charCodeAt(i);
-            }
-
-            return byteArray;
-        }
-
-        function pemToArrayBuffer(pem) {
-            var b64Lines = removeLines(pem);
-            var b64Prefix = b64Lines.replace('-----BEGIN RSA PRIVATE KEY-----', '');
-            var b64Final = b64Prefix.replace('-----END RSA PRIVATE KEY-----', '');
-
-            return base64ToArrayBuffer(b64Final);
-        }
-
-        window.getKey = () => {
-            window.crypto.subtle.generateKey(
-                {
-                    name: "RSA-OAEP",
-                    modulusLength: 2048,
-                    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                    hash: { name: "SHA-256" }
-                },
-                true,
-                ["encrypt", "decrypt"]
-            ).then((r) => {
-                let a = JSON.stringify(r);
-                console.log(a);
-                DotNet.invokeMethod("coabroker", "CalculateSquareRoot", a);
-            })
-            return "";
-        };
-
 
         function stringToArrayBuffer(byteString) {
             var byteArray = new Uint8Array(byteString.length);
@@ -74,24 +32,10 @@
             return bytes.buffer
         }
 
-        function convertPemToBinary(pem) {
-            var lines = pem.split('\n')
-            var encoded = ''
-            for (var i = 0; i < lines.length; i++) {
-                if (lines[i].trim().length > 0 &&
-                    lines[i].indexOf('-BEGIN RSA PRIVATE KEY-') < 0 &&
-                    lines[i].indexOf('-BEGIN RSA PUBLIC KEY-') < 0 &&
-                    lines[i].indexOf('-END RSA PRIVATE KEY-') < 0 &&
-                    lines[i].indexOf('-END RSA PUBLIC KEY-') < 0) {
-                    encoded += lines[i].trim()
-                }
-            }
-            return base64StringToArrayBuffer(encoded)
-        }
 
         // Read: https://stackoverflow.com/questions/38677742/cryptokey-arraybuffer-to-base64-and-back/38714970#38714970
-        // Also future: https://docs.microsoft.com/en-us/aspnet/core/blazor/call-dotnet-from-javascript?view=aspnetcore-5.0
-        window.sign2Data = (privKey) => {
+        // Also interesting: https://docs.microsoft.com/en-us/aspnet/core/blazor/call-dotnet-from-javascript?view=aspnetcore-5.0
+        window.signData = (privKey, data) => {
             try {
                 //  console.log(privKey);~
                 var signAlgorithm = {
@@ -101,30 +45,35 @@
                     extractable: false,
                     publicExponent: new Uint8Array([1, 0, 1])
                 }
-                window.crypto.subtle.importKey(
-                    "pkcs8",
-                    convertPemToBinary(privKey),
-                    signAlgorithm,
-                    true,
-                    ["sign"]
-                ).then(function (importedPrivateKey) {
-                    try {
-                        console.log("AAA");
-                        console.log(importedPrivateKey);
-                    } catch (e) {
-                        console.log(e);
-                    }
+                return new Promise((resolve, reject) => {
+                    window.crypto.subtle.importKey(
+                        "pkcs8",
+                        base64StringToArrayBuffer(privKey),
+                        signAlgorithm,
+                        true,
+                        ["sign"]
+                    ).then(function (importedPrivateKey) {
+                        try {
+                            window.privateKey = importedPrivateKey;
+                            console.log(importedPrivateKey);
+                            window.crypto.subtle.sign(signAlgorithm, importedPrivateKey, base64StringToArrayBuffer(data))
+                                .then(function (result) {
+                                    //console.log(result);
+                                    let b64r = btoa(String.fromCharCode.apply(null, new Uint8Array(result)));
+                                    //console.log(b64r);
+                                    resolve(b64r);
+                                });
+
+                        } catch (e) {
+                            console.log(e);
+                            reject(e);
+                        }
+                    });
                 });
             } catch (e) {
                 console.log(e);
             }
             return "";
-            /* var signature = "Hello world";
-             var rsa = new RSAKey();
-             rsa.setPrivate(modulus, publicExponent, privateExponent);
- 
-             var result = rsa.signString(signature, 'sha256');
-             rsa.setPublic(modulus, publicExponent);*/
         }
     </script>
 </head>
