@@ -36,7 +36,7 @@
     {
         await JS.InvokeVoidAsync("bootFn", "boot");
 
-        var response = await Http.GetStringAsync("https://coaliter.ketchup.pizza/coalite");
+        var response = await Http.GetStringAsync("https://coaliter.ketchup.pizza/coalite/action");
         var coaliteResource = JToken.Parse(response).ToObject<CoaliteResource>();
 
         var action = CoaliteAction.CLAIM;
@@ -67,7 +67,7 @@
         b64Blob = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(dataToSign));
         request.Signature = await JS.InvokeAsync<string>("signData", inputPrivK, b64Blob);
 
-        var result = await Http.PostAsJsonAsync("https://coaliter.ketchup.pizza/coalite", request);
+        var result = await Http.PostAsJsonAsync("https://coaliter.ketchup.pizza/coalite/action", request);
         result.EnsureSuccessStatusCode();
         var finalResult = await result.Content.ReadAsStringAsync();
         Console.WriteLine(finalResult);
