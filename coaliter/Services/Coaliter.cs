@@ -21,6 +21,7 @@ namespace Ketchup.Pizza.Services
   {
     private object _dblock;
     private ILogger _logger;
+    private Coalite _lastCoalite;
     private string _keypath;
     private string _pubKeyPath;
     private string _passphrase;
@@ -49,6 +50,7 @@ namespace Ketchup.Pizza.Services
       _logger = logger;
       var dbcontext = GetDBConnection();
       dbcontext.Database.EnsureCreated(); // simple db = simple approach.
+      _lastCoalite = null;
     }
 
     public CountResource Count()
@@ -66,20 +68,25 @@ namespace Ketchup.Pizza.Services
       DateTime coaliteTs;
       lock (_dblock)
       {
-        var dbcontext = GetDBConnection();
-        coalite =
-          dbcontext.Coalites
-                    .OrderByDescending(c => c.FullSecondStamp)
-                    .FirstOrDefault();
+        coalite = _lastCoalite;
+
+        //previous version which saved all coalites
+        //dbcontext.Coalites
+        //          .OrderByDescending(c => c.FullSecondStamp)
+        //          .FirstOrDefault();
+
         if (coalite.Claimed)
         {
           throw new CoalitingException((int)HttpStatusCode.BadRequest, "Current coalite already emitted");
         }
+        
+        var dbcontext = GetDBConnection();
         coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
         coalite.SignCoalite(_rsa, CoaliteAction.PUBLISH, "", _serverPublicKey, "System");
         coalite.Claimed = true;
         coalite.ClaimedAt = DateTime.UtcNow;
+        dbcontext.Add(coalite);
         dbcontext.SaveChanges();
       }
       return new CoaliteResource(coalid: coalite.Coalid,
@@ -107,9 +114,10 @@ namespace Ketchup.Pizza.Services
                                  .FirstOrDefault();
           if (coalite == null)
           {
-            var newCoalite = GenerateCoalite(fullSecondStamp);
-            dbcontext.Add(newCoalite);
-            dbcontext.SaveChanges();
+            _lastCoalite = GenerateCoalite(fullSecondStamp);
+            //previous version which saves all coalites
+            //dbcontext.Add(newCoalite);
+            //dbcontext.SaveChanges();
           }
         }
 
