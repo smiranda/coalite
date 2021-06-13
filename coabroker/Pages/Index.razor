@@ -6,6 +6,9 @@
 
 <h1>Claim Coalites</h1>
 
+<div id="terminal"></div>
+
+
 <p>
     <label>Private Key</label>
     <textarea @bind="inputPrivK" />
@@ -26,11 +29,21 @@
     <textarea @bind="outputCoalite" />
 </p>
 
+
+
+
 @code {
     public string inputPubK { get; set; }
     public string inputPrivK { get; set; }
     public string inputId { get; set; }
     public string outputCoalite { get; set; }
+
+    [JSInvokable]
+    public static async Task<string> RunTerminalCommand(string command)
+    {
+        Console.WriteLine(command);
+        return await Task.Run(() => { return "ok"; });
+    }
 
     private async Task GetCoalite()
     {
