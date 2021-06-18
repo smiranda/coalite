@@ -125,8 +125,8 @@
                     simplePrompt();
                 } else {
                     window.runTerminalCommand(c, (r) => {
-                        term.write('\r\n> ');
-                        term.write(r);
+                        if (r?.length > 0)
+                            term.write(`\r\n${r}`);
                         currentLineBuffer = "";
                         prompt();
                     });

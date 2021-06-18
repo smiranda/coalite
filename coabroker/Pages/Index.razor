@@ -1,6 +1,8 @@
 @page "/"
+@using System.IO
 @using Ketchup.Pizza.Models
 @using Newtonsoft.Json.Linq
+@using DotForth
 @inject HttpClient Http
 @inject IJSRuntime JS;
 
@@ -37,12 +39,17 @@
     public string inputPrivK { get; set; }
     public string inputId { get; set; }
     public string outputCoalite { get; set; }
+    public static Forth Forth { get; set; } = new Forth();
 
     [JSInvokable]
     public static async Task<string> RunTerminalCommand(string command)
     {
-        Console.WriteLine(command);
-        return await Task.Run(() => { return "ok"; });
+        var twr = new StringWriter();
+        Forth.Run(command, twr);
+        var result = twr.ToString();
+        /* Console.WriteLine("$ " + command);
+        Console.WriteLine("> " + result);*/
+        return await Task.Run(() => { return result; });
     }
 
     private async Task GetCoalite()

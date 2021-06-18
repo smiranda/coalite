@@ -10,6 +10,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Net.Http.Json" Version="5.0.0" />
     <ProjectReference Include="..\coalite-models\coalite-models.csproj" />
+    <ProjectReference Include="..\..\dotforth\dotforth\dotforth.csproj" />
   </ItemGroup>
 
 </Project>
