@@ -1,62 +1,62 @@
 @page "/"
 @using System.IO
+@using System.Collections
 @using Ketchup.Pizza.Models
 @using Newtonsoft.Json.Linq
 @using DotForth
 @inject HttpClient Http
 @inject IJSRuntime JS;
 
-<h1>Claim Coalites</h1>
-
 <div id="terminal"></div>
 
-
-<p>
-    <label>Private Key</label>
-    <textarea @bind="inputPrivK" />
-</p>
-<p>
-    <label>Public Key</label>
-    <textarea @bind="inputPubK" />
-</p>
-<p>
-    <label>User Id</label>
-    <textarea @bind="inputId" />
-</p>
-
-<button class="btn btn-primary" @onclick="GetCoalite">Get Coalite</button>
-
-<p>
-    <label>Coalite Output</label>
-    <textarea @bind="outputCoalite" />
-</p>
-
-
-
-
 @code {
-    public string inputPubK { get; set; }
-    public string inputPrivK { get; set; }
-    public string inputId { get; set; }
-    public string outputCoalite { get; set; }
     public static Forth Forth { get; set; } = new Forth();
+
+    protected async Task<string> GetKey()
+    {
+        return await JS.InvokeAsync<string>("generateKey");
+    }
+
+    protected override void OnInitialized()
+    {
+        Forth.LoadWord("key", new CompiledWord(async (Forth forth, TextWriter output) =>
+        {
+            var key = await GetKey();
+            // Console.WriteLine(key);
+            var keyData = JToken.Parse(key);
+            var privateKeyData = keyData["privateKey"].Value<string>();
+            var publicKeyData = keyData["publicKey"].Value<string>();
+            forth.Stack.Push(new StackEntry(privateKeyData));
+            forth.Stack.Push(new StackEntry(publicKeyData));
+        }));
+
+        Forth.LoadWord("get", new CompiledWord(async (Forth forth, TextWriter output) =>
+        {
+            var userId = forth.Stack.Pop().Token;
+            var publicKeyData = forth.Stack.Pop().Token;
+            var privateKeyData = forth.Stack.Pop().Token;
+            var coalite = await GetCoalite(userId, publicKeyData, privateKeyData);
+            forth.Stack.Push(new StackEntry(coalite));
+        }));
+    }
 
     [JSInvokable]
     public static async Task<string> RunTerminalCommand(string command)
     {
         var twr = new StringWriter();
-        Forth.Run(command, twr);
+        await Forth.Run(command, twr);
         var result = twr.ToString();
         /* Console.WriteLine("$ " + command);
         Console.WriteLine("> " + result);*/
         return await Task.Run(() => { return result; });
     }
 
-    private async Task GetCoalite()
+    private async Task<string> GetCoalite(string inputId, string inputPubK, string inputPrivK)
     {
         await JS.InvokeVoidAsync("bootFn", "boot");
 
-        var response = await Http.GetStringAsync("https://coaliter.ketchup.pizza/coalite");
+        //var response = await Http.GetStringAsync("https://coaliter.ketchup.pizza/coalite");
+        var response = await Http.GetStringAsync("http://localhost:5000/coalite");
         var coaliteResource = JToken.Parse(response).ToObject<CoaliteResource>();
 
         var action = CoaliteAction.CLAIM;
@@ -69,6 +69,7 @@
         action,
         actionPayload,
         signerId);
+        request.SignerPublicKeyFormat = "X.509";
 
         // Create action signature
         var signature = new CoaliteSignature(action,
@@ -87,10 +88,11 @@
         b64Blob = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(dataToSign));
         request.Signature = await JS.InvokeAsync<string>("signData", inputPrivK, b64Blob);
 
-        var result = await Http.PostAsJsonAsync("https://coaliter.ketchup.pizza/coalite/action", request);
+        //var result = await Http.PostAsJsonAsync("https://coaliter.ketchup.pizza/coalite/action", request);
+        var result = await Http.PostAsJsonAsync("http://localhost:5000/coalite/action", request);
         result.EnsureSuccessStatusCode();
         var finalResult = await result.Content.ReadAsStringAsync();
         Console.WriteLine(finalResult);
-        outputCoalite = finalResult;
+        return finalResult;
     }
 }

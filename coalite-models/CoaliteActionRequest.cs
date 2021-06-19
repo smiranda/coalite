@@ -24,6 +24,7 @@ namespace Ketchup.Pizza.Models
     public CoaliteResource Coalite { get; set; }
     [StringLength(1000)]
     public string SignerPublicKey { get; set; }
+    public string SignerPublicKeyFormat { get; set; }
     public CoaliteAction Action { get; set; }
     [StringLength(1000000)]
     public string ActionPayload { get; set; }

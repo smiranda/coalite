@@ -14,6 +14,53 @@
 
     <script>
 
+        var db;
+        var request = indexedDB.open("Coabroker", 1);
+        request.onerror = function (event) {
+            console.error("Error creating database");
+        };
+        request.onsuccess = function (event) {
+            db = event.target.result;
+        };
+        request.onupgradeneeded = function (event) {
+            // Called either on (1) new database or on (2) version mismatch = needs upgrade.
+            var db = event.target.result;
+            // Create object stores
+            var keyStore = db.createObjectStore("keys", { keyPath: "id" });
+            var coaliteStore = db.createObjectStore("coalites", { keyPath: "id" });
+            keyStore.createIndex("name", "name", { unique: false });
+        };
+
+        window.storeObject = (storeName, record) => {
+            var objectStore = transaction.objectStore(storeName, "readwrite").add(record);
+            return new Promise((resolve, reject) => {
+                request.onerror = function (evt) {
+                    var err = evt.target.errorCode;
+                    console.error(err);
+                    reject(err);
+                };
+                request.onsuccess = function (evt) {
+                    resolve();
+                };
+            });
+        };
+
+        window.loadObject = (storeName, record) => {
+            var objectStore = transaction.objectStore(storeName, "read").get(record);
+            return new Promise((resolve, reject) => {
+                request.onerror = function (evt) {
+                    evt.target.errorCode;
+                };
+                request.onsuccess = function (event) {
+                    if (typeof evt.target.result == 'undefined') {
+                        console.log("No matching record found");
+                        resolve(null);
+                    }
+                    resolve(JSON.stringify(evt.target.result));
+                };
+            });
+        };
+
         window.bootFn = (msg) => {
             console.log(msg);
         };
@@ -25,6 +72,19 @@
             }
             return byteArray;
         }
+        function arrayBufferToString(exportedPrivateKey) {
+            var byteArray = new Uint8Array(exportedPrivateKey);
+            var byteString = '';
+            for (var i = 0; i < byteArray.byteLength; i++) {
+                byteString += String.fromCodePoint(byteArray[i]);
+            }
+            return byteString;
+        }
+        function b64EncodeUnicode(str) {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+                return String.fromCharCode('0x' + p1);
+            }));
+        };
         function base64StringToArrayBuffer(b64str) {
             var byteStr = atob(b64str)
             var bytes = new Uint8Array(byteStr.length)
@@ -32,6 +92,38 @@
                 bytes[i] = byteStr.charCodeAt(i)
             }
             return bytes.buffer
+        }
+        function ab2str(buf) {
+            return String.fromCharCode.apply(null, new Uint8Array(buf));
+        }
+
+        window.generateKey = () => {
+            return new Promise((resolve, reject) => {
+                try {
+                    window.crypto.subtle.generateKey(
+                        {
+                            name: "RSA-OAEP",
+                            modulusLength: 4096,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: "SHA-256",
+                        },
+                        true,
+                        ["encrypt", "decrypt"]
+                    ).then(async (keyPair) => {
+                        var pbk = await crypto.subtle.exportKey("spki", keyPair.publicKey);
+                        var pvk = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+                        var r = JSON.stringify(
+                            {
+                                publicKey: window.btoa(ab2str(pbk)),
+                                privateKey: window.btoa(ab2str(pvk))
+                            });
+                        resolve(r);
+                    });
+                } catch (e) {
+                    console.log(e);
+                    reject(e);
+                }
+            });
         }
 
 
@@ -57,7 +149,6 @@
                     ).then(function (importedPrivateKey) {
                         try {
                             window.privateKey = importedPrivateKey;
-                            console.log(importedPrivateKey);
                             window.crypto.subtle.sign(signAlgorithm, importedPrivateKey, base64StringToArrayBuffer(data))
                                 .then(function (result) {
                                     //console.log(result);
@@ -152,7 +243,7 @@
                 }
             });
 
-        }, 1000);
+        }, 2000);
     </script>
 
     <script src="_framework/blazor.webassembly.js"></script>

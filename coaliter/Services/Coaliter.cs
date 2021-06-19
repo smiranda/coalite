@@ -79,7 +79,7 @@ namespace Ketchup.Pizza.Services
         {
           throw new CoalitingException((int)HttpStatusCode.BadRequest, "Current coalite already emitted");
         }
-        
+
         var dbcontext = GetDBConnection();
         coaliteTs = _baseDate + TimeSpan.FromSeconds(coalite.FullSecondStamp);
 
@@ -170,7 +170,23 @@ namespace Ketchup.Pizza.Services
       var clientRsa = RSA.Create();
       int bytesReadPk;
       var pk = coaliteActionRequest.SignerPublicKey.Split(' ').OrderByDescending(s => s.Length).FirstOrDefault();
-      clientRsa.ImportRSAPublicKey(Convert.FromBase64String(pk), out bytesReadPk);
+      if (coaliteActionRequest.SignerPublicKeyFormat == "pkcs1")
+      {
+        clientRsa.ImportRSAPublicKey(Convert.FromBase64String(pk), out bytesReadPk);
+      }
+      else if (coaliteActionRequest.SignerPublicKeyFormat == "X.509")
+      {
+        clientRsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(pk), out bytesReadPk);
+      }
+      else if (coaliteActionRequest.SignerPublicKeyFormat == "pem")
+      {
+        clientRsa.ImportFromPem(pk);
+      }
+      else
+      {// Defaults to pkcs1
+        clientRsa.ImportRSAPublicKey(Convert.FromBase64String(pk), out bytesReadPk);
+      }
+
       if (!clientRsa.VerifyData(buffer, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
       {
         throw new CoalitingException((int)HttpStatusCode.BadRequest,
