@@ -6,11 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>coabroker</title>
     <base href="/" />
-    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
-    <link href="css/app.css" rel="stylesheet" />
-    <link href="coabroker.styles.css" rel="stylesheet" />
+    
+
+        <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+        <link href="css/app.css" rel="stylesheet" />
+        <link href="coabroker.styles.css" rel="stylesheet" />
+        
+    
     <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+
     <script src="node_modules/xterm/lib/xterm.js"></script>
+    <script src="node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
 
     <script>
 
@@ -182,8 +188,8 @@
     </script>
 </head>
 
-<body>
-    <div id="app">Loading...</div>
+<body style="margin: 0 !important;">
+    <div id="app" style="color: white;">...</div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.
@@ -198,9 +204,31 @@
                 cursorBlink: "block",
                 scrollback: 1000,
                 tabStopWidth: 4,
+                fontSize: 42,
+                fontFamily: 'Courier New',
+                theme: {
+                    background: '#2b1900',
+                    foreground: '#ff9400',
+                    cursor:'#ff9400'
+                }
             });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
             let currentLineBuffer = "";
             term.open(document.getElementById('terminal'));
+            document.querySelector('.xterm-viewport').style.overflowY = 'hidden';
+            document.querySelector('html').style.height = '100%';
+            document.querySelector('body').style.height = '100%';
+            document.querySelector('#app').style.height = '100%';
+            document.querySelector('#terminal').style.height = '100%';
+            document.querySelector('.terminal.xterm.xterm-dom-renderer-owner-1').style.height = '100%';
+            document.querySelector('.xterm-viewport').style.height = '100%';
+            document.querySelector('.xterm-screen').style.height = '100%';
+            fitAddon.fit();
+            // If you find more problems with terminal fit, explore this more : https://github.com/xtermjs/xterm.js/issues/3564
+            window.onresize = function () {
+                fitAddon.fit();
+            };
             let simplePrompt = () => {
                 term.write('$ ');
             };
@@ -223,6 +251,7 @@
                     });
                 }
             };
+            // TEST setInterval(()=>{ term.write("\r\n[ALERT] 1 second passed"); }, 1000);
             term.onKey((e) => {
                 const ev = e.domEvent;
                 const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
