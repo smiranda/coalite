@@ -251,7 +251,17 @@
                     });
                 }
             };
-            // TEST setInterval(()=>{ term.write("\r\n[ALERT] 1 second passed"); }, 1000);
+            // TEST 
+            setInterval(()=>{ 
+                let numchars = currentLineBuffer.length;
+                while (numchars > 0) {
+                    term.write('\b \b');
+                    numchars--;
+                }
+                term.write(`\r\n[!] ${Math.random()}`); 
+                prompt();
+                term.write(currentLineBuffer);
+            }, 1000);
             term.onKey((e) => {
                 const ev = e.domEvent;
                 const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;

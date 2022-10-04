@@ -6,7 +6,49 @@
 @using DotForth
 @inject HttpClient Http
 @inject IJSRuntime JS;
+<style>
+/*textarea {
+  width: 100%;
+  padding: 0px;
+  overflow-y: hidden;
+  box-sizing: border-box;
+  border: 0px;
+  border-radius: 0px;
+  background-color: #2b1900;
+  font-size: 42px;
+  color: #ff9400;
+  font-family: 'Courier New', Courier, monospace;
+  resize: none;
+}
+textarea:focus {
+    outline: none !important;
+    border: 0px;
+    box-shadow: 0 0 0px #000000;
+  }
+  .cursor {
+    position: relative;
+}
+.cursor i {
+    position: absolute;
+    width: 1px;
+    height: 80%;
+    background-color: gray;
+    left: 5px;
+    top: 10%;
+    animation-name: blink;
+    animation-duration: 800ms;
+    animation-iteration-count: infinite;
+    opacity: 1;
+}
 
+.cursor input:focus + i {
+    display: none;
+}*/
+
+
+</style>
+<!--<div id="terminal2"class="cursor"><input/></div>-->
+<!--<div id="eventarea"><textarea></textarea></div>-->
 <div id="terminal"></div>
 
 @code {
