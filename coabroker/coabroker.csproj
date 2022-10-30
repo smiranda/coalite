@@ -12,6 +12,7 @@
     <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
     <ProjectReference Include="..\coalite-models\coalite-models.csproj" />
     <ProjectReference Include="..\..\dotforth\dotforth\dotforth.csproj" />
+    <ProjectReference Include="..\..\textaverse\textaverse-parser\textaverse-parser.csproj" />
   </ItemGroup>
 
 </Project>

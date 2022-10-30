@@ -3,6 +3,8 @@
 @using System.Collections
 @using Ketchup.Pizza.Models
 @using Newtonsoft.Json.Linq
+@using Textaverse.Models
+@using Textaverse.Parser
 @using DotForth
 @inject HttpClient Http
 @inject IJSRuntime JS;
@@ -85,9 +87,22 @@ textarea:focus {
     [JSInvokable]
     public static async Task<string> RunTerminalCommand(string command)
     {
-        var twr = new StringWriter();
-        await Forth.Run(command, twr);
-        var result = twr.ToString();
+        //var twr = new StringWriter();
+        //OPTIONALLY RUN FORTH 
+        //await Forth.Run(command, twr);
+        //var result = twr.ToString();
+
+        Verse verse = null;
+        var parser = new VerseParser();
+        string result = "???";
+        try
+        {
+            verse = parser.Parse(command);
+            result = verse.ToString();
+        } catch(Exception e) {
+            result = e.ToString();
+        }
+
         /* Console.WriteLine("$ " + command);
         Console.WriteLine("> " + result);*/
         return await Task.Run(() => { return result; });
