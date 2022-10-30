@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html style="background: #2b1900;">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>coabroker</title>
+    <!--<base href="/wwwroot/" />--><!-- NOTE FIXME !!! NEEDED TO WORK on 447109.xyz/wwwroot instead of line below-->
     <base href="/" />
     
 
@@ -188,8 +189,8 @@
     </script>
 </head>
 
-<body style="margin: 0 !important;">
-    <div id="app" style="color: white;">...</div>
+<body style="margin: 0 !important; background: #2b1900;">
+    <div id="app" style="color:#ff9400; font-family: 'Courier New', Courier, monospace; font-size: 16;">... loading (v0.0.1)</div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.
@@ -204,7 +205,7 @@
                 cursorBlink: "block",
                 scrollback: 1000,
                 tabStopWidth: 4,
-                fontSize: 42,
+                fontSize: 16,
                 fontFamily: 'Courier New',
                 theme: {
                     background: '#2b1900',
@@ -224,6 +225,8 @@
             document.querySelector('.terminal.xterm.xterm-dom-renderer-owner-1').style.height = '100%';
             document.querySelector('.xterm-viewport').style.height = '100%';
             document.querySelector('.xterm-screen').style.height = '100%';
+            term.textarea.setAttribute("enterkeyhint", "send");
+            //term.textarea.setAttribute("password", "true");            
             fitAddon.fit();
             // If you find more problems with terminal fit, explore this more : https://github.com/xtermjs/xterm.js/issues/3564
             window.onresize = function () {
